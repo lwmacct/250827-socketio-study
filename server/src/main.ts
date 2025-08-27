@@ -23,6 +23,7 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`🚀 Socket.IO 服务器运行在 http://localhost:${port}`);
-  console.log(`📱 测试客户端页面: http://localhost:${port}/index.html`);
+  console.log(`📱 Vue 客户端页面: http://localhost:${port}/index.html`);
+  console.log(`🔧 开发模式: 使用 'npm run start:dev' 启动热更新`);
 }
 bootstrap();
