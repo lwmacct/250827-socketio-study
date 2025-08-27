@@ -7,8 +7,8 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // 配置静态文件服务
-  app.useStaticAssets(join(__dirname, '..', 'public'));
+  // 配置静态文件服务 - 指向客户端构建后的文件
+  app.useStaticAssets(join(__dirname, '..', '..', 'client', 'dist'));
 
   // 启用 CORS 支持
   app.enableCors({
@@ -23,6 +23,6 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`🚀 Socket.IO 服务器运行在 http://localhost:${port}`);
-  console.log(`📱 测试客户端页面: http://localhost:${port}/test-client.html`);
+  console.log(`📱 测试客户端页面: http://localhost:${port}/index.html`);
 }
 bootstrap();
