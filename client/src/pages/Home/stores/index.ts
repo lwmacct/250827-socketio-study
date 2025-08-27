@@ -27,6 +27,12 @@ interface SocketState {
   currentRoom: string | null
 }
 
+interface RoomStats {
+  onlineUsers: number
+  rooms: Record<string, number>
+  timestamp: string
+}
+
 /**
  * Home 页面 Store
  * 管理首页的访问统计和 Socket.IO 连接状态
@@ -56,6 +62,13 @@ export const useHomeStore = defineStore('home', () => {
   const roomName = ref('room1')
   const roomMessageInput = ref('')
 
+  // 统计信息
+  const roomStats = ref<RoomStats>({
+    onlineUsers: 0,
+    rooms: {},
+    timestamp: '',
+  })
+
   // === 计算属性 ===
   const formattedLastVisit = computed(() => {
     if (!stats.value.lastVisitTime) return '首次访问'
@@ -72,12 +85,17 @@ export const useHomeStore = defineStore('home', () => {
 
   const connectionStatus = computed(() => {
     if (socketState.value.connected) {
-      return `已连接 (ID: ${socketState.value.clientId})`
+      return `已连接 (ID: ${socketState.value.clientId}) - 在线用户: ${roomStats.value.onlineUsers}`
     }
     return '未连接'
   })
 
   const isConnected = computed(() => socketState.value.connected)
+
+  const currentRoomMembers = computed(() => {
+    if (!socketState.value.currentRoom) return 0
+    return roomStats.value.rooms[socketState.value.currentRoom] || 0
+  })
 
   // === Socket.IO 方法 ===
   const connect = () => {
@@ -93,6 +111,13 @@ export const useHomeStore = defineStore('home', () => {
       addMessage('✅ 连接成功，客户端ID: ' + socket.value?.id, 'system')
     })
 
+    socket.value.on('connected', (data: any) => {
+      socketState.value.connected = true
+      socketState.value.clientId = data.clientId
+      roomStats.value.onlineUsers = data.onlineUsers
+      addMessage(`✅ ${data.message}`, 'system')
+    })
+
     socket.value.on('disconnect', (reason: string) => {
       socketState.value.connected = false
       socketState.value.clientId = null
@@ -101,27 +126,52 @@ export const useHomeStore = defineStore('home', () => {
     })
 
     socket.value.on('message', (data: any) => {
-      addMessage(`💬 收到消息: ${JSON.stringify(data)}`, 'received', data.sender)
+      addMessage(`💬 收到消息: ${data.message}`, 'received', data.sender)
     })
 
     socket.value.on('userConnected', (data: any) => {
-      addMessage(`👋 用户连接: ${JSON.stringify(data)}`, 'system')
+      roomStats.value.onlineUsers = data.onlineUsers
+      addMessage(`👋 用户连接: ${data.message}`, 'system')
     })
 
     socket.value.on('userDisconnected', (data: any) => {
-      addMessage(`👋 用户断开: ${JSON.stringify(data)}`, 'system')
+      roomStats.value.onlineUsers = data.onlineUsers
+      addMessage(`👋 用户断开: ${data.message}`, 'system')
+    })
+
+    socket.value.on('roomJoined', (data: any) => {
+      socketState.value.currentRoom = data.room
+      roomStats.value.rooms[data.room] = data.roomMembers
+      addMessage(`🏠 ${data.message} (房间人数: ${data.roomMembers})`, 'system')
+    })
+
+    socket.value.on('roomLeft', (data: any) => {
+      if (socketState.value.currentRoom === data.room) {
+        socketState.value.currentRoom = null
+      }
+      addMessage(`🚪 ${data.message}`, 'system')
     })
 
     socket.value.on('userJoinedRoom', (data: any) => {
-      addMessage(`🏠 用户加入房间: ${JSON.stringify(data)}`, 'system')
+      roomStats.value.rooms[data.room] = data.roomMembers
+      addMessage(`🏠 用户加入房间: ${data.room} (房间人数: ${data.roomMembers})`, 'system')
     })
 
     socket.value.on('userLeftRoom', (data: any) => {
-      addMessage(`🏠 用户离开房间: ${JSON.stringify(data)}`, 'system')
+      roomStats.value.rooms[data.room] = data.roomMembers
+      addMessage(`🏠 用户离开房间: ${data.room} (房间人数: ${data.roomMembers})`, 'system')
     })
 
     socket.value.on('roomMessage', (data: any) => {
-      addMessage(`🏠💬 房间消息: ${JSON.stringify(data)}`, 'received', data.sender)
+      addMessage(`🏠💬 [${data.room}] ${data.message}`, 'received', data.sender)
+    })
+
+    socket.value.on('roomStats', (data: RoomStats) => {
+      roomStats.value = data
+    })
+
+    socket.value.on('error', (data: any) => {
+      addMessage(`❌ 错误: ${data.message}`, 'system')
     })
 
     socket.value.on('connect_error', (error: any) => {
@@ -170,7 +220,6 @@ export const useHomeStore = defineStore('home', () => {
     }
 
     socket.value.emit('join-room', { room: roomName.value })
-    socketState.value.currentRoom = roomName.value
     addMessage(`🏠 尝试加入房间: ${roomName.value}`, 'system')
   }
 
@@ -186,9 +235,6 @@ export const useHomeStore = defineStore('home', () => {
     }
 
     socket.value.emit('leave-room', { room: roomName.value })
-    if (socketState.value.currentRoom === roomName.value) {
-      socketState.value.currentRoom = null
-    }
     addMessage(`🏠 尝试离开房间: ${roomName.value}`, 'system')
   }
 
@@ -216,6 +262,12 @@ export const useHomeStore = defineStore('home', () => {
       senderName.value,
     )
     roomMessageInput.value = ''
+  }
+
+  const getStats = () => {
+    if (socket.value && socket.value.connected) {
+      socket.value.emit('get-stats')
+    }
   }
 
   const addMessage = (content: string, type: Message['type'] = 'system', sender?: string) => {
@@ -294,6 +346,7 @@ export const useHomeStore = defineStore('home', () => {
     showStatistics: computed(() => showStatistics.value),
     socketState: computed(() => socketState.value),
     messages: computed(() => messages.value),
+    roomStats: computed(() => roomStats.value),
     senderName,
     messageInput,
     roomName,
@@ -304,6 +357,7 @@ export const useHomeStore = defineStore('home', () => {
     sessionDuration,
     connectionStatus,
     isConnected,
+    currentRoomMembers,
 
     // Socket.IO 方法
     connect,
@@ -312,6 +366,7 @@ export const useHomeStore = defineStore('home', () => {
     joinRoom,
     leaveRoom,
     sendRoomMessage,
+    getStats,
     addMessage,
     clearMessages,
 
