@@ -1,36 +1,49 @@
 /**
  * Home 页面相关的类型定义
+ * Socket.IO 功能相关类型
  */
 
 /**
- * 功能特性项接口
+ * 消息类型
  */
-export interface FeatureItem {
+export interface Message {
   id: string
-  title: string
-  icon: string
-  description: string[]
-  color?: string
+  timestamp: Date
+  content: string
+  type: 'sent' | 'received' | 'system'
+  sender?: string
+  room?: string
 }
 
 /**
- * 头部操作按钮接口
+ * Socket 连接状态
  */
-export interface HeaderAction {
-  icon: string
-  text: string
-  color: string
-  variant: string
-  onClick: () => void
+export interface SocketState {
+  connected: boolean
+  clientId: string | null
+  currentRoom: string | null
 }
 
 /**
- * 首页数据接口
+ * 消息数据接口
  */
-export interface HomePageData {
-  pageTitle: string
-  pageIcon: string
-  features: FeatureItem[]
-  techStack: FeatureItem[]
-  headerActions: HeaderAction[]
+export interface MessageData {
+  message: string
+  sender: string
+}
+
+/**
+ * 房间消息数据接口
+ */
+export interface RoomMessageData {
+  room: string
+  message: string
+  sender: string
+}
+
+/**
+ * 房间操作数据接口
+ */
+export interface RoomData {
+  room: string
 }
