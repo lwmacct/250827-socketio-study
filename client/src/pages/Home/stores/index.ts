@@ -219,6 +219,12 @@ export const useHomeStore = defineStore('home', () => {
       return
     }
 
+    // 检查是否已经在房间中
+    if (socketState.value.currentRoom === roomName.value) {
+      addMessage(`您已经在房间 ${roomName.value} 中了`, 'system')
+      return
+    }
+
     socket.value.emit('join-room', { room: roomName.value })
     addMessage(`🏠 尝试加入房间: ${roomName.value}`, 'system')
   }
@@ -234,6 +240,12 @@ export const useHomeStore = defineStore('home', () => {
       return
     }
 
+    // 检查是否在房间中
+    if (socketState.value.currentRoom !== roomName.value) {
+      addMessage(`您不在房间 ${roomName.value} 中`, 'system')
+      return
+    }
+
     socket.value.emit('leave-room', { room: roomName.value })
     addMessage(`🏠 尝试离开房间: ${roomName.value}`, 'system')
   }
@@ -246,6 +258,12 @@ export const useHomeStore = defineStore('home', () => {
 
     if (!roomName.value.trim() || !roomMessageInput.value.trim()) {
       addMessage('请输入房间名称和消息！', 'system')
+      return
+    }
+
+    // 检查是否在房间中
+    if (socketState.value.currentRoom !== roomName.value) {
+      addMessage(`请先加入房间 ${roomName.value}`, 'system')
       return
     }
 
