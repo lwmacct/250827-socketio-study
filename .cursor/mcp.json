@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "Context7": {
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "vuetify-mcp": {
+      "command": "npx",
+      "args": ["-y", "@vuetify/mcp"],
+      "env": {}
+    }
+  }
+}

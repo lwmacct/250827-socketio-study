@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+- 对于 vuetifyjs 框架, 尽可能调用 MCP 工具 vuetify-mcp 来获取使用方法和帮助文档;
+- 对于 框架/库类, 尽可能调用 MCP 工具 Context7 来获取使用方法和帮助文档;
+- 我已经运行 `npm run dev` 启动了项目, 不可再次启动, 除非项目已经关闭;
+- 编码完成以后, 使用 `npm run type-check && npm run format` 检查类型并格式化代码;
+- 在更新 `.vue` 文件时, 如果同一目录下存在同名的 `.md` 文件，那么文档内容应进行同步, 主要使用 `mermaid` 图表, 尽量少用文字, 不要包含代码 (因为文档就是对代码的解释);
